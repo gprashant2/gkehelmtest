@@ -5,7 +5,7 @@ replicaCount: 3
 
 image:
   # Update repository to reflect Artifact Registry
-  repository: us-central1-docker.pkg.dev/poc-070424/my-docker-repo/app1
+  repository: us-central1-docker.pkg.dev/poc-070424/my-docker-repo/app2
   pullPolicy: IfNotPresent
   # The tag will be overridden by the workflow's GITHUB_SHA, but you can set a default here
   tag: "main" # Or "latest", depending on your preference for a default
