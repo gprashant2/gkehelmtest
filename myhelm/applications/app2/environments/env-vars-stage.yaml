@@ -1,0 +1,17 @@
+# App2 staging environment variables
+env:
+  - name: MONGODB_URL
+    value: "mongodb://staging-mongo:27017/app2_stage"
+  - name: REDIS_URL
+    value: "redis://staging-redis:6379"
+  - name: API_BASE_URL
+    value: "https://api-staging.yourdomain.com"
+  - name: NODE_ENV
+    value: "staging"
+
+configMap:
+  data:
+    MONGODB_HOST: "staging-mongo"
+    MONGODB_PORT: "27017"
+    MONGODB_DATABASE: "app2_stage"
+    SESSION_SECRET: "staging-secret-key"
