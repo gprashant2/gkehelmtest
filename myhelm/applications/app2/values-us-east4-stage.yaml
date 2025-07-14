@@ -1,5 +1,5 @@
 # App1 production values
-appName: app1
+appName: app2
 
 replicaCount: 3
 
