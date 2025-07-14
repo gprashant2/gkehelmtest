@@ -4,9 +4,11 @@ appName: app1
 replicaCount: 3
 
 image:
-  repository: gcr.io/your-project/app1
+  # Update repository to reflect Artifact Registry
+  repository: us-central1-docker.pkg.dev/poc-070424/my-docker-repo/app1
   pullPolicy: IfNotPresent
-  tag: "latest"
+  # The tag will be overridden by the workflow's GITHUB_SHA, but you can set a default here
+  tag: "main" # Or "latest", depending on your preference for a default
 
 service:
   type: ClusterIP
