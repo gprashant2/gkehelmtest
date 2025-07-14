@@ -27,11 +27,13 @@ jobs:
       with:
         credentials_json: ${{ secrets.GKE_SA_KEY }}
     # ✅ Step 3: Setup gcloud CLI
-    # IMPORTANT: Pass the project_id here to ensure gcloud is configured correctly
+    # IMPORTANT: Pass the project_id and explicitly install gke-gcloud-auth-plugin
     - name: Setup Google Cloud CLI
       uses: google-github-actions/setup-gcloud@v2
       with:
         project_id: ${{ env.PROJECT_ID }}
+        # Ensure the GKE authentication plugin is installed
+        install_components: 'gke-gcloud-auth-plugin'
     # ✅ Step 4: Configure Docker to use gcloud as credential helper
     - name: Configure Docker for Artifact Registry
       # Use the new REGISTRY_HOST for gcloud auth configure-docker
