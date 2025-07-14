@@ -1,17 +1,19 @@
-# App2 production values
-appName: app2
+# App1 production values
+appName: app1
 
-replicaCount: 2
+replicaCount: 3
 
 image:
-  repository: gcr.io/your-project/app2
+  # Update repository to reflect Artifact Registry
+  repository: us-central1-docker.pkg.dev/poc-070424/my-docker-repo/app1
   pullPolicy: IfNotPresent
-  tag: "latest"
+  # The tag will be overridden by the workflow's GITHUB_SHA, but you can set a default here
+  tag: "main" # Or "latest", depending on your preference for a default
 
 service:
   type: ClusterIP
   port: 80
-  targetPort: 3000
+  targetPort: 8080
 
 resources:
   limits:
@@ -23,8 +25,8 @@ resources:
 
 autoscaling:
   enabled: true
-  minReplicas: 2
-  maxReplicas: 8
+  minReplicas: 3
+  maxReplicas: 10
   targetCPUUtilizationPercentage: 70
 
 configMap:
