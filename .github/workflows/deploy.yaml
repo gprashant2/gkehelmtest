@@ -1,0 +1,93 @@
+name: Deploy to GKE
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  PROJECT_ID: poc-070424
+  GKE_CLUSTER: cluster-1
+  GKE_ZONE: us-central1
+  REGISTRY: gcr.io
+
+jobs:
+  setup-build-publish-deploy:
+    name: Setup, Build, Publish, and Deploy
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Google Cloud CLI
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        project_id: ${{ env.PROJECT_ID }}
+
+    - name: Configure Docker to use gcloud as a credential helper
+      run: |-
+        gcloud --quiet auth configure-docker
+
+    - name: Get GKE credentials
+      run: |-
+        gcloud container clusters get-credentials "$GKE_CLUSTER" --zone "$GKE_ZONE"
+
+    - name: Set environment variables
+      run: |
+        if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+          echo "ENVIRONMENT=prod" >> $GITHUB_ENV
+          echo "NAMESPACE=production" >> $GITHUB_ENV
+        else
+          echo "ENVIRONMENT=stage" >> $GITHUB_ENV
+          echo "NAMESPACE=staging" >> $GITHUB_ENV
+        fi
+
+    - name: Build and push app1 image
+      run: |-
+        cd apps/app1
+        docker build -t "$REGISTRY/$PROJECT_ID/app1:$GITHUB_SHA" .
+        docker push "$REGISTRY/$PROJECT_ID/app1:$GITHUB_SHA"
+
+    - name: Build and push app2 image
+      run: |-
+        cd apps/app2
+        docker build -t "$REGISTRY/$PROJECT_ID/app2:$GITHUB_SHA" .
+        docker push "$REGISTRY/$PROJECT_ID/app2:$GITHUB_SHA"
+
+    - name: Install Helm
+      uses: azure/setup-helm@v3
+      with:
+        version: '3.12.0'
+
+    - name: Deploy app1 with Helm
+      run: |-
+        helm upgrade --install app1-$ENVIRONMENT myhelm \
+          --namespace $NAMESPACE \
+          --create-namespace \
+          --values myhelm/applications/app1/values-us-east4-$ENVIRONMENT.yaml \
+          --values myhelm/applications/app1/environments/env-vars-$ENVIRONMENT.yaml \
+          --set image.repository=$REGISTRY/$PROJECT_ID/app1 \
+          --set image.tag=$GITHUB_SHA \
+          --set appName=app1 \
+          --wait
+
+    - name: Deploy app2 with Helm
+      run: |-
+        helm upgrade --install app2-$ENVIRONMENT myhelm \
+          --namespace $NAMESPACE \
+          --create-namespace \
+          --values myhelm/applications/app2/values-us-east4-$ENVIRONMENT.yaml \
+          --values myhelm/applications/app2/environments/env-vars-$ENVIRONMENT.yaml \
+          --set image.repository=$REGISTRY/$PROJECT_ID/app2 \
+          --set image.tag=$GITHUB_SHA \
+          --set appName=app2 \
+          --wait
+
+    - name: Verify deployment
+      run: |-
+        kubectl get services -n $NAMESPACE
+        kubectl get pods -n $NAMESPACE
