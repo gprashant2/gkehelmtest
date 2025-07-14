@@ -7,10 +7,11 @@ on:
     branches: [ main ]          # Run on PRs targeting main
 
 env:
-  PROJECT_ID: poc-070424                 # GCP project ID
-  GKE_CLUSTER: cluster-1                 # GKE cluster name
-  GKE_ZONE: us-central1                  # GKE cluster zone
-  REGISTRY: docker.pkg.dev                       # GCP container registry
+  PROJECT_ID: ${{ secrets.GKE_PROJECT }}
+  GKE_CLUSTER: my-gke-cluster
+  GKE_ZONE: us-central1-a
+  REGISTRY: gcr.io
+  HELM_CHART_PATH: ./myhelm
 
 jobs:
   setup-build-publish-deploy:
