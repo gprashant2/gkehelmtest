@@ -1,18 +1,16 @@
-name: Deploy to GKE1
-
+name: Deploy to GKE
 on:
   push:
     branches: [ main, develop ] # Trigger on main and develop pushes
   pull_request:
     branches: [ main ]          # Run on PRs targeting main
-
 env:
-  PROJECT_ID: ${{ secrets.GKE_PROJECT }}
-  GKE_CLUSTER: my-gke-cluster
-  GKE_ZONE: us-central1-a
-  REGISTRY: gcr.io
-  HELM_CHART_PATH: ./myhelm
-
+  PROJECT_ID: poc-070424                 # GCP project ID
+  GKE_CLUSTER: cluster-1                 # GKE cluster name
+  GKE_ZONE: us-central1                  # GKE cluster zone
+  # Transitioning to Artifact Registry (pkg.dev domain)
+  REGISTRY_HOST: us-central1-docker.pkg.dev # Example: us-central1-docker.pkg.dev
+  AR_REPOSITORY: my-docker-repo          # Your Artifact Registry repository name (e.g., my-docker-repo)
 jobs:
   setup-build-publish-deploy:
     name: Setup, Build, Publish, and Deploy
@@ -23,27 +21,25 @@ jobs:
     # ✅ Step 1: Checkout the repository
     - name: Checkout
       uses: actions/checkout@v4
-
     # ✅ Step 2: Authenticate with GCP using service account
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
       with:
         credentials_json: ${{ secrets.GKE_SA_KEY }}
-
     # ✅ Step 3: Setup gcloud CLI
+    # IMPORTANT: Pass the project_id here to ensure gcloud is configured correctly
     - name: Setup Google Cloud CLI
       uses: google-github-actions/setup-gcloud@v2
       with:
         project_id: ${{ env.PROJECT_ID }}
-
     # ✅ Step 4: Configure Docker to use gcloud as credential helper
-    - name: Configure Docker for GCR
-      run: gcloud auth configure-docker
-
+    - name: Configure Docker for Artifact Registry
+      # Use the new REGISTRY_HOST for gcloud auth configure-docker
+      run: gcloud auth configure-docker "$REGISTRY_HOST"
     # ✅ Step 5: Get GKE credentials
     - name: Get GKE credentials
+      # PROJECT_ID is now correctly set by the setup-gcloud action
       run: gcloud container clusters get-credentials "$GKE_CLUSTER" --zone "$GKE_ZONE" --project "$PROJECT_ID"
-
     # ✅ Step 6: Set environment variables based on branch
     - name: Set environment variables
       run: |
@@ -54,27 +50,25 @@ jobs:
           echo "ENVIRONMENT=stage" >> $GITHUB_ENV
           echo "NAMESPACE=staging" >> $GITHUB_ENV
         fi
-
     # ✅ Step 7: Build and push Docker image for app1
     - name: Build and push app1 image
       run: |
         cd apps/app1
-        docker build -t "$REGISTRY/$PROJECT_ID/app1:$GITHUB_SHA" .
-        docker push "$REGISTRY/$PROJECT_ID/app1:$GITHUB_SHA"
-
+        # Update the tag to use the new REGISTRY_HOST and AR_REPOSITORY
+        docker build -t "$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app1:$GITHUB_SHA" .
+        docker push "$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app1:$GITHUB_SHA"
     # ✅ Step 8: Build and push Docker image for app2
     - name: Build and push app2 image
       run: |
         cd apps/app2
-        docker build -t "$REGISTRY/$PROJECT_ID/app2:$GITHUB_SHA" .
-        docker push "$REGISTRY/$PROJECT_ID/app2:$GITHUB_SHA"
-
+        # Update the tag to use the new REGISTRY_HOST and AR_REPOSITORY
+        docker build -t "$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app2:$GITHUB_SHA" .
+        docker push "$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app2:$GITHUB_SHA"
     # ✅ Step 9: Install Helm
     - name: Install Helm
       uses: azure/setup-helm@v3
       with:
         version: '3.12.0'
-
     # ✅ Step 10: Deploy app1 with Helm
     - name: Deploy app1 with Helm
       run: |
@@ -83,11 +77,10 @@ jobs:
           --create-namespace \
           --values myhelm/applications/app1/values-us-east4-$ENVIRONMENT.yaml \
           --values myhelm/applications/app1/environments/env-vars-$ENVIRONMENT.yaml \
-          --set image.repository=$REGISTRY/$PROJECT_ID/app1 \
+          --set image.repository=$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app1 \
           --set image.tag=$GITHUB_SHA \
           --set appName=app1 \
           --wait
-
     # ✅ Step 11: Deploy app2 with Helm
     - name: Deploy app2 with Helm
       run: |
@@ -96,11 +89,10 @@ jobs:
           --create-namespace \
           --values myhelm/applications/app2/values-us-east4-$ENVIRONMENT.yaml \
           --values myhelm/applications/app2/environments/env-vars-$ENVIRONMENT.yaml \
-          --set image.repository=$REGISTRY/$PROJECT_ID/app2 \
+          --set image.repository=$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app2 \
           --set image.tag=$GITHUB_SHA \
           --set appName=app2 \
           --wait
-
     # ✅ Step 12: Verify deployments
     - name: Verify deployments
       run: |
