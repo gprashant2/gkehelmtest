@@ -10,7 +10,7 @@ env:
   PROJECT_ID: poc-070424                 # GCP project ID
   GKE_CLUSTER: cluster-1                 # GKE cluster name
   GKE_ZONE: us-central1                  # GKE cluster zone
-  REGISTRY: gcr.io                       # GCP container registry
+  REGISTRY: docker.pkg.dev                       # GCP container registry
 
 jobs:
   setup-build-publish-deploy:
