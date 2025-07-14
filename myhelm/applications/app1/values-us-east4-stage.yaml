@@ -1,12 +1,14 @@
-# App1 staging values
+# App1 production values
 appName: app1
 
-replicaCount: 1
+replicaCount: 3
 
 image:
-  repository: gcr.io/your-project/app1
+  # Update repository to reflect Artifact Registry
+  repository: us-central1-docker.pkg.dev/poc-070424/my-docker-repo/app1
   pullPolicy: IfNotPresent
-  tag: "latest"
+  # The tag will be overridden by the workflow's GITHUB_SHA, but you can set a default here
+  tag: "main" # Or "latest", depending on your preference for a default
 
 service:
   type: ClusterIP
@@ -15,20 +17,20 @@ service:
 
 resources:
   limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
     cpu: 500m
     memory: 512Mi
-  requests:
-    cpu: 250m
-    memory: 256Mi
 
 autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 3
-  targetCPUUtilizationPercentage: 80
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
 
 configMap:
   enabled: true
   data:
     APP_ENV: "staging"
-    LOG_LEVEL: "debug"
+    LOG_LEVEL: "info"
