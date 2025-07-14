@@ -52,50 +52,54 @@ jobs:
           echo "ENVIRONMENT=stage" >> $GITHUB_ENV
           echo "NAMESPACE=staging" >> $GITHUB_ENV
         fi
-    # ✅ Step 7: Build and push Docker image for app1
+    # ✅ Step 7: Create Kubernetes Namespace if it doesn't exist
+    # This step is idempotent and will not fail if the namespace already exists.
+    - name: Create Kubernetes Namespace
+      run: |
+        echo "Ensuring namespace $NAMESPACE exists..."
+        kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+    # ✅ Step 8: Build and push Docker image for app1
     - name: Build and push app1 image
       run: |
         cd apps/app1
         # Update the tag to use the new REGISTRY_HOST and AR_REPOSITORY
         docker build -t "$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app1:$GITHUB_SHA" .
         docker push "$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app1:$GITHUB_SHA"
-    # ✅ Step 8: Build and push Docker image for app2
+    # ✅ Step 9: Build and push Docker image for app2
     - name: Build and push app2 image
       run: |
         cd apps/app2
         # Update the tag to use the new REGISTRY_HOST and AR_REPOSITORY
         docker build -t "$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app2:$GITHUB_SHA" .
         docker push "$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app2:$GITHUB_SHA"
-    # ✅ Step 9: Install Helm
+    # ✅ Step 10: Install Helm
     - name: Install Helm
       uses: azure/setup-helm@v3
       with:
         version: '3.12.0'
-    # ✅ Step 10: Deploy app1 with Helm
+    # ✅ Step 11: Deploy app1 with Helm
     - name: Deploy app1 with Helm
       run: |
         helm upgrade --install app1-$ENVIRONMENT myhelm \
           --namespace $NAMESPACE \
-          --create-namespace \
           --values myhelm/applications/app1/values-us-east4-$ENVIRONMENT.yaml \
           --values myhelm/applications/app1/environments/env-vars-$ENVIRONMENT.yaml \
           --set image.repository=$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app1 \
           --set image.tag=$GITHUB_SHA \
           --set appName=app1 \
           --wait
-    # ✅ Step 11: Deploy app2 with Helm
+    # ✅ Step 12: Deploy app2 with Helm
     - name: Deploy app2 with Helm
       run: |
         helm upgrade --install app2-$ENVIRONMENT myhelm \
           --namespace $NAMESPACE \
-          --create-namespace \
           --values myhelm/applications/app2/values-us-east4-$ENVIRONMENT.yaml \
           --values myhelm/applications/app2/environments/env-vars-$ENVIRONMENT.yaml \
           --set image.repository=$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app2 \
           --set image.tag=$GITHUB_SHA \
           --set appName=app2 \
           --wait
-    # ✅ Step 12: Verify deployments
+    # ✅ Step 13: Verify deployments
     - name: Verify deployments
       run: |
         echo "✅ Services in namespace: $NAMESPACE"
