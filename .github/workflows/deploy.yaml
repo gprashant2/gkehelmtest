@@ -7,7 +7,7 @@ on:
 env:
   PROJECT_ID: poc-070424                 # GCP project ID
   GKE_CLUSTER: cluster-1                 # GKE cluster name
-  GKE_ZONE: us-central1                  # GKE cluster zone
+  GKE_ZONE: us-east1                  # GKE cluster zone
   # Transitioning to Artifact Registry (pkg.dev domain)
   REGISTRY_HOST: us-central1-docker.pkg.dev # Example: us-central1-docker.pkg.dev
   AR_REPOSITORY: my-docker-repo          # Your Artifact Registry repository name (e.g., my-docker-repo)
