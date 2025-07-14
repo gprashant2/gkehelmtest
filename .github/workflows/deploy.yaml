@@ -1,4 +1,4 @@
-name: Deploy to GKE1
+name: Deploy to GKE
 on:
   push:
     branches: [ main, develop ] # Trigger on main and develop pushes
@@ -87,7 +87,26 @@ jobs:
           --set image.repository=$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app1 \
           --set image.tag=$GITHUB_SHA \
           --set appName=app1 \
-          --wait
+          --timeout 1m # Keep timeout to prevent indefinite waits
+    - name: Debug app1 deployment status
+      if: failure() # Only run this step if the previous Helm step failed
+      run: |
+        echo "--- Debugging app1 deployment in namespace: $NAMESPACE ---"
+        echo "kubectl get pods -n $NAMESPACE -l app.kubernetes.io/instance=app1-$ENVIRONMENT"
+        kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/instance=app1-$ENVIRONMENT
+        echo "kubectl describe deployment app1-$ENVIRONMENT -n $NAMESPACE"
+        kubectl describe deployment app1-$ENVIRONMENT -n "$NAMESPACE"
+        echo "kubectl get events -n $NAMESPACE"
+        kubectl get events -n "$NAMESPACE" --sort-by='.lastTimestamp'
+        # Attempt to get logs from a failing pod if one exists
+        POD_NAME=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/instance=app1-$ENVIRONMENT -o jsonpath='{.items[?(@.status.phase!="Running")].metadata.name}' | head -n 1)
+        if [ -n "$POD_NAME" ]; then
+          echo "--- Logs for problematic pod: $POD_NAME ---"
+          kubectl logs "$POD_NAME" -n "$NAMESPACE"
+        else
+          echo "No non-running pods found for app1-$ENVIRONMENT to get logs from."
+        fi
+
     # ✅ Step 12: Deploy app2 with Helm
     - name: Deploy app2 with Helm
       run: |
@@ -98,7 +117,26 @@ jobs:
           --set image.repository=$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app2 \
           --set image.tag=$GITHUB_SHA \
           --set appName=app2 \
-          --wait
+          --timeout 1m # Keep timeout to prevent indefinite waits
+    - name: Debug app2 deployment status
+      if: failure() # Only run this step if the previous Helm step failed
+      run: |
+        echo "--- Debugging app2 deployment in namespace: $NAMESPACE ---"
+        echo "kubectl get pods -n $NAMESPACE -l app.kubernetes.io/instance=app2-$ENVIRONMENT"
+        kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/instance=app2-$ENVIRONMENT
+        echo "kubectl describe deployment app2-$ENVIRONMENT -n $NAMESPACE"
+        kubectl describe deployment app2-$ENVIRONMENT -n "$NAMESPACE"
+        echo "kubectl get events -n $NAMESPACE"
+        kubectl get events -n "$NAMESPACE" --sort-by='.lastTimestamp'
+        # Attempt to get logs from a failing pod if one exists
+        POD_NAME=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/instance=app2-$ENVIRONMENT -o jsonpath='{.items[?(@.status.phase!="Running")].metadata.name}' | head -n 1)
+        if [ -n "$POD_NAME" ]; then
+          echo "--- Logs for problematic pod: $POD_NAME ---"
+          kubectl logs "$POD_NAME" -n "$NAMESPACE"
+        else
+          echo "No non-running pods found for app2-$ENVIRONMENT to get logs from."
+        fi
+
     # ✅ Step 13: Verify deployments
     - name: Verify deployments
       run: |
