@@ -56,16 +56,21 @@ jobs:
     # This step is idempotent and will not fail if the namespace already exists.
     - name: Create Kubernetes Namespace
       run: |
-        echo "Recreating namespace $NAMESPACE..."
-        kubectl delete namespace "$NAMESPACE" --ignore-not-found=true
-        kubectl create namespace "$NAMESPACE"
+       echo "Recreating namespace $NAMESPACE..."
+       kubectl delete namespace "$NAMESPACE" --ignore-not-found=true
+       kubectl create namespace "$NAMESPACE"
+    
+       # Add Helm ownership metadata to prevent the "already exists" error
+       kubectl label namespace "$NAMESPACE" app.kubernetes.io/managed-by=Helm
+       kubectl annotate namespace "$NAMESPACE" meta.helm.sh/release-name=app1-$ENVIRONMENT
+       kubectl annotate namespace "$NAMESPACE" meta.helm.sh/release-namespace=$NAMESPACE
     # ✅ Step 8: Build and push Docker image for app1
     - name: Build and push app1 image
       run: |
         cd apps/app1
         # Update the tag to use the new REGISTRY_HOST and AR_REPOSITORY
-        docker build -t "$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app1:$GITHUB_SHA" .
-        docker push "$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app1:$GITHUB_SHA"
+         docker build -t "$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app1:$GITHUB_SHA" .
+         docker push "$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app1:$GITHUB_SHA"
     # ✅ Step 9: Build and push Docker image for app2
     - name: Build and push app2 image
       run: |
