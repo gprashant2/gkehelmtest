@@ -78,6 +78,51 @@ jobs:
       uses: azure/setup-helm@v3
       with:
         version: '3.12.0'
+
+    # # Add this RIGHT BEFORE Step 11
+    - name: Debug before Helm deployment
+      run: |
+        echo "=== Environment variables ==="
+        echo "ENVIRONMENT: $ENVIRONMENT"
+        echo "NAMESPACE: $NAMESPACE"
+        echo "REGISTRY_HOST: $REGISTRY_HOST"
+        echo "PROJECT_ID: $PROJECT_ID"
+        echo "AR_REPOSITORY: $AR_REPOSITORY"
+        echo "GITHUB_SHA: $GITHUB_SHA"
+        
+        echo "=== Check namespace exists ==="
+        kubectl get namespace $NAMESPACE -o yaml
+        
+        echo "=== Check files exist ==="
+        ls -la myhelm/applications/app1/values-us-central1-$ENVIRONMENT.yaml
+        ls -la myhelm/applications/app1/environments/env-vars-$ENVIRONMENT.yaml
+        
+        echo "=== Check all template files ==="
+        find myhelm/templates/ -name "*.yaml" -exec echo "=== {} ===" \; -exec head -10 {} \;
+        
+        echo "=== Helm template dry run ==="
+        helm template app1-$ENVIRONMENT myhelm \
+          --namespace $NAMESPACE \
+          --values myhelm/applications/app1/values-us-central1-$ENVIRONMENT.yaml \
+          --values myhelm/applications/app1/environments/env-vars-$ENVIRONMENT.yaml \
+          --set image.repository=$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app1 \
+          --set image.tag=$GITHUB_SHA \
+          --set appName=app1 \
+          --debug
+
+    # ✅ Step 11: Deploy app1 with Helm (with more debugging)
+    - name: Deploy app1 with Helm
+      run: |
+        echo "=== Starting Helm deployment ==="
+        helm upgrade --install app1-$ENVIRONMENT myhelm \
+          --namespace $NAMESPACE \
+          --values myhelm/applications/app1/values-us-central1-$ENVIRONMENT.yaml \
+          --values myhelm/applications/app1/environments/env-vars-$ENVIRONMENT.yaml \
+          --set image.repository=$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app1 \
+          --set image.tag=$GITHUB_SHA \
+          --set appName=app1 \
+          --debug \
+          --timeout 1m    
     # ✅ Step 11: Deploy app1 with Helm
     - name: Deploy app1 with Helm
       run: |
