@@ -20,12 +20,12 @@ resources:
     cpu: 1000m
     memory: 1Gi
   requests:
-    cpu: 500m
+    cpu: 200m
     memory: 256Mi
 
 autoscaling:
   enabled: true
-  minReplicas: 3
+  minReplicas: 1
   maxReplicas: 10
   targetCPUUtilizationPercentage: 70
 
