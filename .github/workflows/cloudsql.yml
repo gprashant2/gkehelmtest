@@ -1,4 +1,4 @@
-name: Terraform CloudSQL Deployment
+name: Terraform CloudSQL Deployment1
 
 on:
   push:
@@ -18,8 +18,8 @@ on:
       - '.github/workflows/terraform-cloudsql.yml'
 
 env:
-  TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
-  GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+  TF_VAR_project_id: ${{ secrets.PROJECT_ID }}
+  GOOGLE_CREDENTIALS: ${{ secrets.GKE_SA_KEY }}
 
 jobs:
   terraform-plan:
