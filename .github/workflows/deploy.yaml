@@ -82,7 +82,7 @@ jobs:
       run: |
         helm upgrade --install app1-$ENVIRONMENT myhelm \
           --namespace $NAMESPACE \
-          --values myhelm/applications/app1/values-us-east4-$ENVIRONMENT.yaml \
+          --values myhelm/applications/app1/values-us-central1-$ENVIRONMENT.yaml \
           --values myhelm/applications/app1/environments/env-vars-$ENVIRONMENT.yaml \
           --set image.repository=$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app1 \
           --set image.tag=$GITHUB_SHA \
@@ -112,7 +112,7 @@ jobs:
       run: |
         helm upgrade --install app2-$ENVIRONMENT myhelm \
           --namespace $NAMESPACE \
-          --values myhelm/applications/app2/values-us-east4-$ENVIRONMENT.yaml \
+          --values myhelm/applications/app2/values-us-central1-$ENVIRONMENT.yaml \
           --values myhelm/applications/app2/environments/env-vars-$ENVIRONMENT.yaml \
           --set image.repository=$REGISTRY_HOST/$PROJECT_ID/$AR_REPOSITORY/app2 \
           --set image.tag=$GITHUB_SHA \
