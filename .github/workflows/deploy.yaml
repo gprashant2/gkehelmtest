@@ -56,8 +56,9 @@ jobs:
     # This step is idempotent and will not fail if the namespace already exists.
     - name: Create Kubernetes Namespace
       run: |
-        echo "Ensuring namespace $NAMESPACE exists..."
-        kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+        echo "Recreating namespace $NAMESPACE..."
+        kubectl delete namespace "$NAMESPACE" --ignore-not-found=true
+        kubectl create namespace "$NAMESPACE"
     # ✅ Step 8: Build and push Docker image for app1
     - name: Build and push app1 image
       run: |
