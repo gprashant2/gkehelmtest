@@ -20,8 +20,8 @@ resources:
     cpu: 1000m
     memory: 1Gi
   requests:
-    cpu: 300m
-    memory: 512Mi
+    cpu: 100m
+    memory: 180Mi
 
 autoscaling:
   enabled: true
