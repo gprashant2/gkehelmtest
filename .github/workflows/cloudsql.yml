@@ -7,7 +7,7 @@ on:
     paths:
       - 'terraform/cloudsql/**'
       - 'terraform/modules/**'
-      - '.github/workflows/terraform-cloudsql.yml'
+      - '.github/workflows/cloudsql.yml'
   pull_request:
     branches:
       - main
