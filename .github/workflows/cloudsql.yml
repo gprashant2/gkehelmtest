@@ -7,7 +7,7 @@ on:
     paths:
       - 'terraform/cloudsql/**'
       - 'terraform/modules/**'
-      - '.github/workflows/terraform-cloudsql.yml'
+      - '.github/workflows/cloudsql.yml'
   pull_request:
     branches:
       - main
@@ -19,7 +19,7 @@ on:
 
 env:
   TF_VAR_project_id: ${{ secrets.GKE_PROJECT }}
-  GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+  GOOGLE_CREDENTIALS: ${{ secrets.GKE_SA_KEY }}
 
 jobs:
   terraform-plan:
