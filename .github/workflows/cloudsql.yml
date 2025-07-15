@@ -49,8 +49,7 @@ jobs:
         working-directory: ./terraform/cloudsql
         run: |
           terraform init \
-            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
-            -backend-config="prefix=cloudsql/${{ matrix.environment }}"
+            -backend-config="bucket=run-sources-poc-070424-us-central1"
 
       - name: Terraform Validate
         working-directory: ./terraform/cloudsql
