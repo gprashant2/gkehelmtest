@@ -1,6 +1,6 @@
 terraform {
   backend "gcs" {
-    bucket = "deploy89gp"
+    bucket = "newbgp1"
     prefix = "cloudstorage"
   }
 }
