@@ -71,6 +71,7 @@ jobs:
         with:
           secret: ${{ secrets.GITHUB_TOKEN }}
           approvers: gautam-prashant
+          minimum-approvals: 1
           instructions: "Approve to deploy changes to Production."
 
   terraform-apply:
