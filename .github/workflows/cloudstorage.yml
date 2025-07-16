@@ -1,12 +1,10 @@
-#comment 
 name: Terraform CI/CD
+
 on:
   push:
     branches:
       - cloudstorage
-  pull_request:
-    branches:
-      - cloudstorage
+      - cloudstoragestage
 
 permissions:
   contents: write
@@ -22,15 +20,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
-      
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GKE_SA_KEY }}
-      
+
       - name: Verify Terraform State Bucket
         run: |
           if [ -z "${{ vars.TF_BUCKET }}" ]; then
@@ -38,7 +36,7 @@ jobs:
             exit 1
           fi
           echo "Using Terraform state bucket: ${{ vars.TF_BUCKET }}"
-      
+
       - name: Terraform Init
         working-directory: ${{ env.TF_ROOT }}
         run: |
@@ -48,38 +46,40 @@ jobs:
           fi
           echo "Using bucket: ${BUCKET_NAME}"
           terraform init -backend-config="bucket=${BUCKET_NAME}" -backend-config="prefix=terraform-state"
-      
-      - name: Terraform Plan (Staging)
-        if: github.event_name == 'pull_request'
+
+      - name: Terraform Plan (Dynamic)
         working-directory: ${{ env.TF_ROOT }}
-        run: terraform plan -var-file="environments/us-east4/env_stage.tfvars"
-      
-      - name: Terraform Plan (Production)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/cloudstorage'
-        working-directory: ${{ env.TF_ROOT }}
-        run: terraform plan -var-file="environments/us-east4/env_prod.tfvars"
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == "cloudstoragestage" ]]; then
+            echo "Running Terraform Plan for STAGING"
+            terraform plan -var-file="environments/us-east4/env_stage.tfvars"
+          elif [[ "${GITHUB_REF_NAME}" == "cloudstorage" ]]; then
+            echo "Running Terraform Plan for PRODUCTION"
+            terraform plan -var-file="environments/us-east4/env_prod.tfvars"
+          else
+            echo "Branch ${GITHUB_REF_NAME} is not configured for Terraform"
+            exit 1
+          fi
 
   terraform-apply:
     name: Terraform Apply
     runs-on: ubuntu-latest
     needs: terraform-plan
-    if: github.event_name == 'push' && github.ref == 'refs/heads/cloudstorage'
-    environment: production
     env:
       TF_ROOT: terraform/cloudstorage
       GOOGLE_CREDENTIALS: ${{ secrets.GKE_SA_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
-      
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GKE_SA_KEY }}
-      
+
       - name: Terraform Init
         working-directory: ${{ env.TF_ROOT }}
         run: |
@@ -89,7 +89,17 @@ jobs:
           fi
           echo "Using bucket: ${BUCKET_NAME}"
           terraform init -backend-config="bucket=${BUCKET_NAME}" -backend-config="prefix=terraform-state"
-      
-      - name: Terraform Apply
+
+      - name: Terraform Apply (Dynamic)
         working-directory: ${{ env.TF_ROOT }}
-        run: terraform apply -auto-approve -var-file="environments/us-east4/env_prod.tfvars"
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == "cloudstoragestage" ]]; then
+            echo "Applying Terraform for STAGING"
+            terraform apply -auto-approve -var-file="environments/us-east4/env_stage.tfvars"
+          elif [[ "${GITHUB_REF_NAME}" == "cloudstorage" ]]; then
+            echo "Applying Terraform for PRODUCTION"
+            terraform apply -auto-approve -var-file="environments/us-east4/env_prod.tfvars"
+          else
+            echo "Branch ${GITHUB_REF_NAME} is not configured for Terraform"
+            exit 1
+          fi
