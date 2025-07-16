@@ -30,7 +30,7 @@ jobs:
       
       - name: Terraform Init
         working-directory: ${{ env.TF_ROOT }}
-        run: terraform init -backend-config="bucket=${{ secrets.TF_BUCKET }}" -backend-config="prefix=terraform-state"
+        run: terraform init -backend-config="bucket=newbgp1" -backend-config="prefix=terraform-state"
       
       - name: Terraform Plan (Staging)
         if: github.event_name == 'pull_request'
