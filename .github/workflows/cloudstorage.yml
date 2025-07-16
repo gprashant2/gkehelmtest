@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: terraform-plan
     environment:
-      name: staging # 👈 Manual approval required for staging
+      name: staging
       url: https://console.cloud.google.com/storage/browser
     env:
       TF_ROOT: terraform/cloudstorage
@@ -91,7 +91,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: terraform-apply-staging
     environment:
-      name: production # 👈 Manual approval required for production
+      name: production # Forces another manual approval for production
       url: https://console.cloud.google.com/storage/browser
     env:
       TF_ROOT: terraform/cloudstorage
