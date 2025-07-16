@@ -28,19 +28,19 @@ jobs:
       
       - name: Verify Terraform State Bucket
         run: |
-          if [ -z "${{ secrets.TF_BUCKET }}" ]; then
+          if [ -z "${{ vars.TF_BUCKET }}" ]; then
             echo "Error: TF_BUCKET secret is not set"
             exit 1
           fi
-          echo "Using Terraform state bucket: ${{ secrets.TF_BUCKET }}"
+          echo "Using Terraform state bucket: ${{ vars.TF_BUCKET }}"
       
       - name: Verify Terraform State Bucket
         run: |
-          if [ -z "${{ secrets.TF_BUCKET }}" ]; then
+          if [ -z "${{ vars.TF_BUCKET }}" ]; then
             echo "Error: TF_BUCKET secret is not set"
             exit 1
           fi
-          echo "Using Terraform state bucket: ${{ secrets.TF_BUCKET }}"
+          echo "Using Terraform state bucket: ${{ vars.TF_BUCKET }}"
       
       - name: Terraform Init
         working-directory: ${{ env.TF_ROOT }}
