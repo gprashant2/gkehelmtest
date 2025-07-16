@@ -72,6 +72,7 @@ jobs:
           secret: ${{ secrets.GITHUB_TOKEN }}
           approvers: gautam-prashant
           minimum-approvals: 1
+          exclude-workflow-initiator-as-approver: tru
           instructions: "Approve to deploy changes to Production."
 
   terraform-apply:
