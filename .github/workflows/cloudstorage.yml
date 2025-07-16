@@ -8,7 +8,7 @@ on:
 
 permissions:
   contents: write
-  issues: write    
+  deployments: write # Needed for environment approvals
 
 jobs:
   terraform-plan:
@@ -28,14 +28,6 @@ jobs:
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GKE_SA_KEY }}
-
-      - name: Verify Terraform State Bucket
-        run: |
-          if [ -z "${{ vars.TF_BUCKET }}" ]; then
-            echo "Error: TF_BUCKET variable is not set"
-            exit 1
-          fi
-          echo "Using Terraform state bucket: ${{ vars.TF_BUCKET }}"
 
       - name: Terraform Init
         working-directory: ${{ env.TF_ROOT }}
@@ -65,6 +57,9 @@ jobs:
     name: Terraform Apply
     runs-on: ubuntu-latest
     needs: terraform-plan
+    environment:
+      name: ${{ github.ref_name == 'cloudstoragestage' && 'staging' || 'production' }}
+      url: https://console.cloud.google.com/storage/browser
     env:
       TF_ROOT: terraform/cloudstorage
       GOOGLE_CREDENTIALS: ${{ secrets.GKE_SA_KEY }}
