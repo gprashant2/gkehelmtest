@@ -4,11 +4,10 @@ on:
   push:
     branches:
       - cloudstorage
-      - cloudstoragestage
 
 permissions:
   contents: write
-  deployments: write # Needed for environment approvals
+  deployments: write # Required for environment approvals
 
 jobs:
   terraform-plan:
@@ -39,26 +38,16 @@ jobs:
           echo "Using bucket: ${BUCKET_NAME}"
           terraform init -backend-config="bucket=${BUCKET_NAME}" -backend-config="prefix=terraform-state"
 
-      - name: Terraform Plan (Dynamic)
+      - name: Terraform Plan (Staging)
         working-directory: ${{ env.TF_ROOT }}
-        run: |
-          if [[ "${GITHUB_REF_NAME}" == "cloudstoragestage" ]]; then
-            echo "Running Terraform Plan for STAGING"
-            terraform plan -var-file="environments/us-east4/env_stage.tfvars"
-          elif [[ "${GITHUB_REF_NAME}" == "cloudstorage" ]]; then
-            echo "Running Terraform Plan for PRODUCTION"
-            terraform plan -var-file="environments/us-east4/env_prod.tfvars"
-          else
-            echo "Branch ${GITHUB_REF_NAME} is not configured for Terraform"
-            exit 1
-          fi
+        run: terraform plan -var-file="environments/us-east4/env_stage.tfvars"
 
-  terraform-apply:
-    name: Terraform Apply
+  terraform-apply-staging:
+    name: Terraform Apply - Staging
     runs-on: ubuntu-latest
     needs: terraform-plan
     environment:
-      name: ${{ github.ref_name == 'cloudstoragestage' && 'staging' || 'production' }}
+      name: staging # 👈 Requires manual approval in staging
       url: https://console.cloud.google.com/storage/browser
     env:
       TF_ROOT: terraform/cloudstorage
@@ -75,26 +64,32 @@ jobs:
         with:
           credentials_json: ${{ secrets.GKE_SA_KEY }}
 
-      - name: Terraform Init
+      - name: Terraform Apply (Staging)
         working-directory: ${{ env.TF_ROOT }}
-        run: |
-          BUCKET_NAME="${{ vars.TF_BUCKET }}"
-          if [ -z "${BUCKET_NAME}" ]; then
-            BUCKET_NAME="${{ secrets.TF_BUCKET }}"
-          fi
-          echo "Using bucket: ${BUCKET_NAME}"
-          terraform init -backend-config="bucket=${BUCKET_NAME}" -backend-config="prefix=terraform-state"
+        run: terraform apply -auto-approve -var-file="environments/us-east4/env_stage.tfvars"
 
-      - name: Terraform Apply (Dynamic)
+  terraform-apply-production:
+    name: Terraform Apply - Production
+    runs-on: ubuntu-latest
+    needs: terraform-apply-staging
+    environment:
+      name: production # 👈 Requires manual approval in production
+      url: https://console.cloud.google.com/storage/browser
+    env:
+      TF_ROOT: terraform/cloudstorage
+      GOOGLE_CREDENTIALS: ${{ secrets.GKE_SA_KEY }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GKE_SA_KEY }}
+
+      - name: Terraform Apply (Production)
         working-directory: ${{ env.TF_ROOT }}
-        run: |
-          if [[ "${GITHUB_REF_NAME}" == "cloudstoragestage" ]]; then
-            echo "Applying Terraform for STAGING"
-            terraform apply -auto-approve -var-file="environments/us-east4/env_stage.tfvars"
-          elif [[ "${GITHUB_REF_NAME}" == "cloudstorage" ]]; then
-            echo "Applying Terraform for PRODUCTION"
-            terraform apply -auto-approve -var-file="environments/us-east4/env_prod.tfvars"
-          else
-            echo "Branch ${GITHUB_REF_NAME} is not configured for Terraform"
-            exit 1
-          fi
+        run: terraform apply -auto-approve -var-file="environments/us-east4/env_prod.tfvars"
