@@ -43,10 +43,17 @@ jobs:
           echo "Using Terraform state bucket: ${{ vars.TF_BUCKET }}"
       
       - name: Terraform Init
-        working-directory: ${{ env.TF_ROOT }}
-        env:
-          TF_BUCKET: ${{ secrets.TF_BUCKET }}
-        run: terraform init -backend-config="bucket=${TF_BUCKET}" -backend-config="prefix=terraform-state"
+        - name: Terraform Init
+          working-directory: ${{ env.TF_ROOT }}
+         run: |
+         # Try multiple ways to access the bucket name
+          BUCKET_NAME="${{ vars.TF_BUCKET }}"
+          if [ -z "${BUCKET_NAME}" ]; then
+          BUCKET_NAME="${{ secrets.TF_BUCKET }}"
+          fi
+    
+    echo "Using bucket: ${BUCKET_NAME}"
+    terraform init -backend-config="bucket=${BUCKET_NAME}" -backend-config="prefix=terraform-state"
       
       - name: Terraform Plan (Staging)
         if: github.event_name == 'pull_request'
