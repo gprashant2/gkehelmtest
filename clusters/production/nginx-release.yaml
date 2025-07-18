@@ -16,4 +16,3 @@ spec:
     replicaCount: 1
     service:
       type: LoadBalancer
-
