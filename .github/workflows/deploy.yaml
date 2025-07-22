@@ -1,4 +1,4 @@
-name: Deploy to GKE1
+name: Deploy to GKE
 on:
   push:
     branches: [ main, develop ] # Trigger on main and develop pushes
